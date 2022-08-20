@@ -28,7 +28,7 @@ def highest_case() -> int:
 
 def return_string(search) -> str:
     if search is not None:
-        return search.text
+        return search.text.replace("\n", "").strip()
     return ""
 
 def case_info(case_id):
@@ -36,28 +36,38 @@ def case_info(case_id):
     case_contents = BeautifulSoup(page.content, "html.parser")
     title = return_string(case_contents.find(class_ = "content-head"))
     quote = return_string(case_contents.find("blockquote"))
+    case_time_info = case_contents.find("table")
+    time_info = {}
+    if case_time_info is not None:
+        case_time_rows = case_time_info.find_all("tr")
+        for case_time_row in case_time_rows:
+            row_data = case_time_row.find_all("td")
+            if len(row_data) > 1:
+                time_info[return_string(row_data[1])] = return_string(row_data[0])
     extra_info_group = case_contents.find(class_ = "tab-pane active")
-    infos = extra_info_group.find_all("p")
     address = ""
     xy_coord = ""
     lat_long_coord = ""
-    for info in infos:
-        for attribute in ("address: ", "coordinates x,y: ", "coordinates lat,lng: "):
-            if attribute in info.text:
-                final_text = info.text.replace(attribute, "")
-                if attribute == "address: ":
-                    address = final_text
-                elif attribute ==  "coordinates x,y: ":
-                    xy_coord = final_text
-                elif attribute ==  "coordinates lat,lng: ":
-                    lat_long_coord = final_text
-                break
-    return title, quote, address, xy_coord, lat_long_coord
+    if extra_info_group is not None:
+        infos = extra_info_group.find_all("p")
+        for info in infos:
+            for attribute in ("address: ", "coordinates x,y: ", "coordinates lat,lng: "):
+                if attribute in info.text:
+                    final_text = info.text.replace(attribute, "")
+                    if attribute == "address: ":
+                        address = final_text.strip()
+                    elif attribute ==  "coordinates x,y: ":
+                        xy_coord = final_text.strip()
+                    elif attribute ==  "coordinates lat,lng: ":
+                        lat_long_coord = final_text.strip()
+                    break
+    return title, quote, address, xy_coord, lat_long_coord, time_info
 
 
 def main():
     case_start = highest_case()
     info = case_info(case_start)
+    breakpoint()
     pass
 
 
