@@ -7,10 +7,11 @@ import sqlite3
 from bs4 import BeautifulSoup
 from datetime import datetime
 from sqlite3 import Error
+from multiprocessing import Pool
 
 
 BASE311 = "https://311.boston.gov/reports/"
-DATABASE = "../311.db"
+DATABASE = "/media/main/311.db"
 
 
 def arguments():
@@ -29,6 +30,16 @@ def highest_case() -> int:
     ]
     return max(case_ids)
 
+
+def number_cases() -> int:
+    page = requests.get(BASE311)
+    main311_contents = BeautifulSoup(page.content, "html.parser")
+    head = main311_contents.find(class_="content-head")
+    if head.text is not None:
+        number_search = re.search(r"\d+", head.text)
+        if number_search is not None:
+            return int(number_search.group())
+    return np.nan
 
 def return_string(search) -> str:
     if search is not None:
@@ -64,8 +75,10 @@ def case_info(case_id):
                     closed_message = status
     extra_info_group = case_contents.find(class_="tab-pane active")
     address = ""
-    xy_coord = ""
-    lat_long_coord = ""
+    x_coord = np.nan
+    y_coord = np.nan
+    lat_coord = np.nan
+    long_coord = np.nan
     if extra_info_group is not None:
         infos = extra_info_group.find_all("p")
         for info in infos:
@@ -79,16 +92,23 @@ def case_info(case_id):
                     if attribute == "address: ":
                         address = final_text.strip()
                     elif attribute == "coordinates x,y: ":
-                        xy_coord = final_text.strip()
+                        x,y = final_text.strip().split(",")
+                        x_coord = float(x)
+                        y_coord = float(y)
                     elif attribute == "coordinates lat,lng: ":
-                        lat_long_coord = final_text.strip()
+                        lat, long = final_text.strip().split(",")
+                        lat_coord = float(lat)
+                        long_coord = float(long)
                     break
     return (
+        case_id,
         title,
         quote,
         address,
-        xy_coord,
-        lat_long_coord,
+        x_coord,
+        y_coord,
+        lat_coord,
+        long_coord,
         opened_time,
         closed_time,
         closed_message,
@@ -98,8 +118,8 @@ def case_info(case_id):
 def insert_case_info(case_id):
     info = case_info(case_id)
     sql = """
-    INSERT INTO info(case_id,title,address,xy_coordinates,latitude_longitude,opened,closed,closed_message)
-    VALUES(?,?,?,?,?,?,?,?)
+    INSERT INTO cases(case_id,title,quote,address,x,y,latitude,longitude,opened,closed,closed_message)
+    VALUES(?,?,?,?,?,?,?,?,?,?,?)
     """
     conn = get_connection()
     if conn is not None:
@@ -108,7 +128,8 @@ def insert_case_info(case_id):
             cur.execute(sql, info)
             conn.commit()
             conn.close()
-            print(info[5])
+            if info[8] is not None:
+                print(info[8].ctime())
         except Error as e:
             print(e)
 
@@ -124,15 +145,18 @@ def get_connection():
 
 def create_database():
     table_code = """
-    CREATE TABLE IF NOT EXISTS info (
-            case_id integer PRIMARY KEY,
-            title text,
-            address text,
-            xy_coordinates text,
-            latitude_longitude text,
-            opened datetime,
-            closed datetime,
-            closed_message text
+    CREATE TABLE IF NOT EXISTS cases (
+            case_id INT PRIMARY KEY,
+            title VARCHAR(255),
+            quote VARCHAR(255),
+            address VARCHAR(255),
+            x FLOAT,
+            y FLOAT,
+            latitude FLOAT,
+            longitude FLOAT,
+            opened DATETIME,
+            closed DATETIME,
+            closed_message VARCHAR(255)
             );
     """
     conn = get_connection()
@@ -148,9 +172,10 @@ def create_database():
 def main():
     create_database()
     case_start = highest_case()
+    cases = range(case_start, case_start - number_cases(), -1)
+    with Pool(8) as pool:
+        pool.map(insert_case_info, cases)
     insert_case_info(case_start)
-    breakpoint()
-    pass
 
 
 if __name__ == "__main__":
