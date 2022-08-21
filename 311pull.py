@@ -9,6 +9,7 @@ from datetime import datetime
 from sqlite3 import Error
 from multiprocessing import Pool
 from time import sleep
+from tqdm import tqdm
 
 
 BASE311 = "https://311.boston.gov/reports/"
@@ -155,17 +156,17 @@ def insert_case_info(case_id):
     conn = get_connection()
     if conn is not None and info[8] is not None:
         try:
-            print(info[8].ctime())
+            # print(info[8].ctime())
             cur = conn.cursor()
             cur.execute(sql, info[:-1])
             conn.commit()
         except Error as e:
             print(e)
     else:
-        if conn is None:
-            print("DB connection failed")
+        # if conn is None:
+            # print("DB connection failed")
         if info[8] is None:
-            print("Data retrieval failed")
+            # print("Data retrieval failed")
             if conn is not None:
                 # print(f"Case {info[0]} failed")
                 cur = conn.cursor()
@@ -173,7 +174,8 @@ def insert_case_info(case_id):
                 conn.commit()
     if conn is not None:
         conn.close()
-    sleep(1)
+    # print(f"Finished case: {case_id}         \r", end="")
+    sleep(.5)
 
 
 def get_connection():
@@ -243,8 +245,9 @@ def main():
     all_cases = range(case_start, case_end, -1)
     new_cases = list(set(all_cases).difference(cases_already_done))
     new_cases.sort(reverse=True)
-    with Pool(8) as pool:
-        pool.map(insert_case_info, new_cases)
+    with Pool(4) as pool:
+        list(tqdm(pool.imap_unordered(insert_case_info, new_cases), total=len(new_cases)))
+        # pool.map(insert_case_info, new_cases)
 
 
 if __name__ == "__main__":
