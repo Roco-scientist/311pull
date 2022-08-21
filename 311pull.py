@@ -51,20 +51,18 @@ def return_string(search) -> str:
 
 def case_info(case_id):
     throttled = True
-    title = None
     page = requests.get(f"{BASE311}{case_id}")
     page_status = page.status_code
     if page_status == 500:
         return (case_id, None, None, None, None, None, None, None, None, None, None, page_status)
-    case_contents = BeautifulSoup(page.content, "html.parser")
     while throttled:
-        title = return_string(case_contents.find(class_="content-head"))
-        if title is not None:
+        if page_status != 403:
             throttled = False
         else:
             print("Throttled")
-            sleep(2)
+            sleep(3)
             page = requests.get(f"{BASE311}{case_id}")
+            page_status = page.status_code
             case_contents = BeautifulSoup(page.content, "html.parser")
         # throttled_header = case_contents.find("pre")
         # if throttled_header is None:
@@ -79,7 +77,8 @@ def case_info(case_id):
         #         else:
         #             print("Throttled")
         #             sleep(0.5)
-    # title = return_string(case_contents.find(class_="content-head"))
+    case_contents = BeautifulSoup(page.content, "html.parser")
+    title = return_string(case_contents.find(class_="content-head"))
     quote = return_string(case_contents.find("blockquote"))
     case_time_info = case_contents.find("table")
 
@@ -167,12 +166,9 @@ def insert_case_info(case_id):
             print("Data retrieval failed")
             if conn is not None:
                 # print(f"Case {info[0]} failed")
-                if info[-1] == 500:
-                    cur = conn.cursor()
-                    cur.execute("INSERT INTO failed(case_id,status_code) VALUES(?,?)", (info[0], info[-1]))
-                    conn.commit()
-                else:
-                    sleep(2)
+                cur = conn.cursor()
+                cur.execute("INSERT INTO failed(case_id,status_code) VALUES(?,?)", (info[0], info[-1]))
+                conn.commit()
     if conn is not None:
         conn.close()
 
