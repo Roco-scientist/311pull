@@ -39,6 +39,7 @@ def plot(data):
         else:
             frame.append(int(f"{year}{week}"))
     data["Frame"] = frame
+    data.sort_values(by="Frame", inplace=True)
     fig = px.density_mapbox(
         data,
         lat="latitude",
