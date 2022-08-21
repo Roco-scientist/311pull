@@ -173,6 +173,7 @@ def insert_case_info(case_id):
                 conn.commit()
     if conn is not None:
         conn.close()
+    sleep(1)
 
 
 def get_connection():
