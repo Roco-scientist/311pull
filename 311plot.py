@@ -6,6 +6,7 @@ import statistics
 
 from sqlite3 import Error
 from pandas import DataFrame
+from datetime import datetime
 
 DATABASE = "../311.db"
 
@@ -28,6 +29,17 @@ def get_connection():
 def plot(data):
     center_lon = statistics.median(data.longitude)
     center_lat = statistics.median(data.latitude)
+    frame = []
+    for date in data.opened:
+        date_py = datetime.fromisoformat(date)
+        week = str(date_py.isocalendar().week)
+        year = date_py.year
+        if len(week) == 1:
+            frame.append(int(f"{year}0{week}"))
+        else:
+            frame.append(int(f"{year}{week}"))
+    data["Frame"] = frame
+    data.sort_values(by="Frame", inplace=True)
     fig = px.density_mapbox(
         data,
         lat="latitude",
@@ -37,6 +49,7 @@ def plot(data):
         center=dict(lat=center_lat, lon=center_lon),
         zoom=11,
         mapbox_style="stamen-terrain",
+        animation_frame="Frame",
     )
     fig.show()
 
