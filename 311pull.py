@@ -55,12 +55,14 @@ def case_info(case_id):
     page_status = page.status_code
     if page_status == 500:
         return (case_id, None, None, None, None, None, None, None, None, None, None, page_status)
+    throttled_seconds = 3
     while throttled:
         if page_status != 403:
             throttled = False
         else:
             print("Throttled")
-            sleep(3)
+            sleep(throttled_seconds)
+            throttled_seconds += 2
             page = requests.get(f"{BASE311}{case_id}")
             page_status = page.status_code
             case_contents = BeautifulSoup(page.content, "html.parser")
