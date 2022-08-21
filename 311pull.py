@@ -62,7 +62,7 @@ def case_info(case_id):
         else:
             print("Throttled")
             sleep(throttled_seconds)
-            throttled_seconds += 2
+            throttled_seconds *= 2
             page = requests.get(f"{BASE311}{case_id}")
             page_status = page.status_code
             case_contents = BeautifulSoup(page.content, "html.parser")
