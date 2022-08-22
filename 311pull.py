@@ -10,6 +10,7 @@ from sqlite3 import Error
 from multiprocessing import Pool
 from time import sleep
 from tqdm import tqdm
+from requests.exceptions import ConnectionError
 
 
 BASE311 = "https://311.boston.gov/reports/"
@@ -52,10 +53,27 @@ def return_string(search) -> str:
 
 def case_info(case_id):
     throttled = True
-    page = requests.get(f"{BASE311}{case_id}")
+    try:
+        page = requests.get(f"{BASE311}{case_id}")
+    except ConnectionError:
+        sleep(60)
+        return (None, None, None, None, None, None, None, None, None, None, None, None)
     page_status = page.status_code
     if page_status == 500:
-        return (case_id, None, None, None, None, None, None, None, None, None, None, page_status)
+        return (
+            case_id,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            page_status,
+        )
     throttled_seconds = 3
     while throttled:
         if page_status != 403:
@@ -143,12 +161,14 @@ def case_info(case_id):
         opened_time,
         closed_time,
         closed_message,
-        page_status
+        page_status,
     )
 
 
 def insert_case_info(case_id):
     info = case_info(case_id)
+    if info[0] is None:
+        return
     sql = """
     INSERT INTO cases(case_id,title,quote,address,x,y,latitude,longitude,opened,closed,closed_message)
     VALUES(?,?,?,?,?,?,?,?,?,?,?)
@@ -164,18 +184,21 @@ def insert_case_info(case_id):
             print(e)
     else:
         # if conn is None:
-            # print("DB connection failed")
+        # print("DB connection failed")
         if info[8] is None:
             # print("Data retrieval failed")
             if conn is not None:
                 # print(f"Case {info[0]} failed")
                 cur = conn.cursor()
-                cur.execute("INSERT INTO failed(case_id,status_code) VALUES(?,?)", (info[0], info[-1]))
+                cur.execute(
+                    "INSERT INTO failed(case_id,status_code) VALUES(?,?)",
+                    (info[0], info[-1]),
+                )
                 conn.commit()
     if conn is not None:
         conn.close()
     # print(f"Finished case: {case_id}         \r", end="")
-    sleep(.5)
+    sleep(0.5)
 
 
 def get_connection():
@@ -245,8 +268,10 @@ def main():
     all_cases = range(case_start, case_end, -1)
     new_cases = list(set(all_cases).difference(cases_already_done))
     new_cases.sort(reverse=True)
-    with Pool(4) as pool:
-        list(tqdm(pool.imap_unordered(insert_case_info, new_cases), total=len(new_cases)))
+    with Pool(2) as pool:
+        list(
+            tqdm(pool.imap_unordered(insert_case_info, new_cases), total=len(new_cases))
+        )
         # pool.map(insert_case_info, new_cases)
 
 
