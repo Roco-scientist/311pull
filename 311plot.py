@@ -26,20 +26,24 @@ def get_connection():
     return conn
 
 
-def plot(data):
+def plot(data: DataFrame) -> None:
     center_lon = statistics.median(data.longitude)
     center_lat = statistics.median(data.latitude)
-    frame = []
+    frame_week = []
+    frame_month = []
+    data["opened"] = data["opened"].apply(datetime.fromisoformat)
     for date in data.opened:
-        date_py = datetime.fromisoformat(date)
-        week = str(date_py.isocalendar().week)
-        year = date_py.year
+        week = str(date.isocalendar().week)
+        month = date.strftime("%b")
+        year = date.year
         if len(week) == 1:
-            frame.append(int(f"{year}0{week}"))
+            frame_week.append(f"{year} 0{week}")
         else:
-            frame.append(int(f"{year}{week}"))
-    data["Frame"] = frame
-    data.sort_values(by="Frame", inplace=True)
+            frame_week.append(f"{year} {week}")
+        frame_month.append(f"{year} {month}")
+    data["Week"] = frame_week
+    data["Month"] = frame_month
+    data.sort_values(by="opened", inplace=True)
     fig = px.density_mapbox(
         data,
         lat="latitude",
@@ -49,7 +53,7 @@ def plot(data):
         center=dict(lat=center_lat, lon=center_lon),
         zoom=11,
         mapbox_style="stamen-terrain",
-        animation_frame="Frame",
+        animation_frame="Month",
     )
     fig.show()
 
