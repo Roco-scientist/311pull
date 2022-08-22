@@ -268,7 +268,7 @@ def main():
     all_cases = range(case_start, case_end, -1)
     new_cases = list(set(all_cases).difference(cases_already_done))
     new_cases.sort(reverse=True)
-    with Pool(2) as pool:
+    with Pool(3) as pool:
         list(
             tqdm(pool.imap_unordered(insert_case_info, new_cases), total=len(new_cases))
         )
