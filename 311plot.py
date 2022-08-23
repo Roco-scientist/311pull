@@ -2,6 +2,7 @@ import argparse
 import sqlite3
 import plotly.graph_objects as go
 import plotly.express as px
+import re
 import statistics
 
 from sqlite3 import Error
@@ -50,7 +51,7 @@ def plot(data: DataFrame, out_dir: str) -> None:
         data,
         lat="latitude",
         lon="longitude",
-        z="Quantity",
+        z="Calls",
         radius=10,
         center=dict(lat=center_lat, lon=center_lon),
         zoom=11,
@@ -63,7 +64,7 @@ def plot(data: DataFrame, out_dir: str) -> None:
         data,
         lat="latitude",
         lon="longitude",
-        z="Quantity",
+        z="Calls",
         radius=10,
         center=dict(lat=center_lat, lon=center_lon),
         zoom=11,
@@ -73,17 +74,28 @@ def plot(data: DataFrame, out_dir: str) -> None:
     fig.write_html(out_path / "311_week.html")
 
 
+def get_quantity(message: str):
+    qty_search = re.search(r"(\d+) syringe", message.lower())
+    if qty_search is None:
+        return 1
+    return int(qty_search.groups()[0])
+
+
 def main():
     args = arguments()
     conn = get_connection(args.database)
     if conn is not None:
         cur = conn.cursor()
         cur.execute(
-            "SELECT latitude,longitude,opened FROM cases WHERE title LIKE '%Needle%'"
+            "SELECT case_id,latitude,longitude,opened,closed_message FROM cases WHERE title LIKE '%Needle%'"
         )
         data = cur.fetchall()
-        df = DataFrame(data=data, columns=["latitude", "longitude", "opened"])
-        df["Quantity"] = 1
+        df = DataFrame(
+            data=data,
+            columns=["case_id", "latitude", "longitude", "opened", "closed_message"],
+        )
+        df["Quantity"] = df.closed_message.apply(get_quantity)
+        df["Calls"] = 1
         conn.close()
         plot(df, args.out)
 
