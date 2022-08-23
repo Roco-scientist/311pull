@@ -34,7 +34,8 @@ def plot(data: DataFrame, out_dir: str) -> None:
     frame_month = []
     data["opened"] = data["opened"].apply(datetime.fromisoformat)
     for date in data.opened:
-        week = str(date.isocalendar().week)
+        # week = str(date.isocalendar().week)
+        week = str(date.week)
         month = date.strftime("%b")
         year = date.year
         if len(week) == 1:
