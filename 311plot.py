@@ -76,6 +76,38 @@ def plot(data: DataFrame, out_dir: str) -> None:
     )
     fig.write_html(out_path / "311_week.html")
 
+    shattuck_date = datetime.fromisoformat("2021-12-20 00:00")
+    total_time = max(data.opened) - shattuck_date
+    pre_shattuck = shattuck_date - total_time
+    shattuck_data = data[data.opened >= pre_shattuck].copy()
+    shattuck_data["timeframe"] = ["Pre" if day < shattuck_date else "Post" for day in shattuck_data.opened]
+    fig = px.density_mapbox(
+        shattuck_data[shattuck_data.timeframe == "Pre"],
+        lat="latitude",
+        lon="longitude",
+        z="Calls",
+        radius=10,
+        center=dict(lat=42.304, lon=-71.095),
+        zoom=13,
+        mapbox_style="stamen-terrain",
+        hover_data=["case_id", "Quantity"],
+        title=f"Before Shattuck cottages<br>{min(shattuck_data.opened).date()} - {shattuck_date.date()}",
+    )
+    fig.write_image(out_path / "311_preShattuck.png")
+    fig = px.density_mapbox(
+        shattuck_data[shattuck_data.timeframe == "Post"],
+        lat="latitude",
+        lon="longitude",
+        z="Calls",
+        radius=10,
+        center=dict(lat=42.304, lon=-71.095),
+        zoom=13,
+        mapbox_style="stamen-terrain",
+        hover_data=["case_id", "Quantity"],
+        title=f"After Shattuck cottages<br>{shattuck_date.date()} - {max(data.opened).date()}",
+    )
+    fig.write_image(out_path / "311_postShattuck.png")
+
 
 def get_quantity(message: str):
     qty_search = re.search(r"(\d+) syringe", message.lower())

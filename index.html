@@ -49,12 +49,17 @@
     <div class="tab">
       <button class="tablink" onClick="openTime(event, 'Monthly')">Monthly</button>
       <button class="tablink" onClick="openTime(event, 'Weekly')">Weekly</button>
+      <button class="tablink" onClick="openTime(event, 'Shattuck')">Pre and Post Shattuck</button>
     </div>
     <div id="Monthly" class="tabcontent">
       <iframe src="./311_month.html" height="90%" width="98%" title="MonthHeatmap"></iframe>
     </div>
     <div id="Weekly" class="tabcontent">
       <iframe src="./311_week.html" height="90%" width="98%" title="WeekHeatmap"></iframe>
+    </div>
+    <div id="Shattuck" class="tabcontent">
+      <img src="./311_preShattuck.png" width="49%">
+      <img src="./311_postShattuck.png" width="49%">
     </div>
     <script>
       function openTime(evt, timeName) {
