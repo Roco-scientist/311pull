@@ -1,0 +1,75 @@
+<html> 
+  <head> 
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+      body {font-family: Arial;}
+
+      /* Style the tab */
+      .tab {
+        overflow: hidden;
+        border: 1px solid #ccc;
+        background-color: #f1f1f1;
+      }
+
+      /* Style the buttons inside the tab */
+      .tab button {
+        background-color: inherit;
+        float: left;
+        border: 1px solid #ccc;
+        outline: 1px solid #ccc;
+        cursor: pointer;
+        padding: 7px 8px;
+        transition: 0.3s;
+        font-size: 12px;
+      }
+
+      /* Change background color of buttons on hover */
+      .tab button:hover {
+        background-color: #ddd;
+      }
+
+      /* Create an active/current tablink class */
+      .tab button.active {
+        background-color: #ccc;
+      }
+
+      /* Style the tab content */
+      .tabcontent {
+        display: none;
+        padding: 6px 6px;
+        margin-left: auto;
+        margin-right:auto;
+        border: 1px solid #ccc;
+        border-top: none;
+      }
+    </style>
+  </head> 
+  <body> 
+    <h1>Needle pickup</h1>
+    <div class="tab">
+      <button class="tablink" onClick="openTime(event, 'Monthly')">Monthly</button>
+      <button class="tablink" onClick="openTime(event, 'Weekly')">Weekly</button>
+    </div>
+    <div id="Monthly" class="tabcontent">
+      <iframe src="./311_month.html" height="90%" width="98%" title="MonthHeatmap"></iframe>
+    </div>
+    <div id="Weekly" class="tabcontent">
+      <iframe src="./311_week.html" height="90%" width="98%" title="WeekHeatmap"></iframe>
+    </div>
+    <script>
+      function openTime(evt, timeName) {
+        var i, tabcontent, tablinks;
+        tabcontent = document.getElementsByClassName("tabcontent");
+        for (i = 0; i < tabcontent.length; i++) {
+          tabcontent[i].style.display = "none";
+        }
+        tablinks = document.getElementsByClassName("tablinks");
+        for (i = 0; i < tablinks.length; i++) {
+          tablinks[i].className = tablinks[i].className.replace(" active", "");
+        }
+        document.getElementById(timeName).style.display = "block";
+        evt.currentTarget.className += " active";
+      }
+  </script>
+  </body> 
+</html>
