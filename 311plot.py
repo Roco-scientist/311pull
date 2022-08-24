@@ -57,8 +57,10 @@ def plot(data: DataFrame, out_dir: str) -> None:
         zoom=11,
         mapbox_style="stamen-terrain",
         animation_frame="Month",
+        hover_data=["case_id", "Quantity"],
     )
     # fig.show()
+    # fig.update_traces(hovertemplate="<b>Case ID:<b> %{case_id}<br><b>Quantity:</b> %{Quantity}")
     fig.write_html(out_path / "311_month.html")
     fig = px.density_mapbox(
         data,
@@ -70,6 +72,7 @@ def plot(data: DataFrame, out_dir: str) -> None:
         zoom=11,
         mapbox_style="stamen-terrain",
         animation_frame="Week",
+        hover_data=["case_id", "Quantity"],
     )
     fig.write_html(out_path / "311_week.html")
 
