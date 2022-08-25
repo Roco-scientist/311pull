@@ -1,9 +1,9 @@
 import argparse
 import sqlite3
-import plotly.graph_objects as go
 import plotly.express as px
 import re
 import statistics
+import numpy as np
 
 from sqlite3 import Error
 from pandas import DataFrame
@@ -109,6 +109,25 @@ def plot(data: DataFrame, out_dir: str) -> None:
     fig.write_image(out_path / "311_postShattuck.png")
 
 
+def plot_progress(database: str, out_dir: str):
+    out_path = Path(out_dir)
+    conn = get_connection(database)
+    if conn is not None:
+        cur = conn.cursor()
+        cur.execute("SELECT opened FROM cases")
+        data = cur.fetchall()
+        all_df = DataFrame(data=data, columns=["opened"])
+        all_df["Date"] = all_df.opened.apply(lambda date: datetime.fromisoformat(date).date())
+        unique_values = np.unique(all_df.Date, return_counts=True)
+        unique_df = DataFrame({"Date": unique_values[0], "Count": unique_values[1]})
+        fig = px.histogram(
+            unique_df,
+            x="Date",
+            y="Count",
+        )
+        fig.write_html(out_path / "progress_density.html")
+
+
 def get_quantity(message: str):
     qty_search = re.search(r"(\d+) syringe", message.lower())
     if qty_search is None:
@@ -133,6 +152,7 @@ def main():
         df["Calls"] = 1
         conn.close()
         plot(df, args.out)
+    plot_progress(args.database, args.out)
 
 
 if __name__ == "__main__":
