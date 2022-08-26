@@ -258,16 +258,37 @@ def cases_done():
         raise ConnectionError("Database did not connect")
 
 
+def needle_cases():
+    conn = None
+    try:
+        conn = sqlite3.connect("/media/main/311.archive.db")
+    except Error as e:
+        print(e)
+    if conn is not None:
+        cur = conn.cursor()
+        cur.execute("SELECT case_id FROM needle")
+        cases = cur.fetchall()
+        cases_flat = [case[0] for case in cases]
+        conn.close()
+        return cases_flat
+    else:
+        raise ConnectionError("Database did not connect")
+
+
+
 def main():
     create_database()
     cases_already_done = cases_done()
+    needle_ids = needle_cases()
+    new_needle_ids = (list(set(needle_ids).difference(cases_already_done)))
     case_start = highest_case()
     # case_numbers = number_cases()
     # case_end = case_start - case_numbers
     case_end = 101001900000
     all_cases = range(case_start, case_end, -1)
-    new_cases = list(set(all_cases).difference(cases_already_done))
+    new_cases = list(set(all_cases).difference(cases_already_done + new_needle_ids))
     new_cases.sort(reverse=True)
+    new_cases = new_needle_ids + new_cases
     with Pool(3) as pool:
         list(
             tqdm(pool.imap_unordered(insert_case_info, new_cases), total=len(new_cases))
