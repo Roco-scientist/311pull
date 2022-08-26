@@ -261,12 +261,12 @@ def cases_done():
 def needle_cases():
     conn = None
     try:
-        conn = sqlite3.connect("/media/main/311.archive.db")
+        conn = sqlite3.connect("/media/main/311.db")
     except Error as e:
         print(e)
     if conn is not None:
         cur = conn.cursor()
-        cur.execute("SELECT case_id FROM needle")
+        cur.execute("SELECT case_id FROM archive WHERE case_id NOT IN (SELECT case_id FROM cases)")
         cases = cur.fetchall()
         cases_flat = [case[0] for case in cases]
         conn.close()

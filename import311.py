@@ -5,14 +5,16 @@ import os
 from sqlite3 import Error
 from requests.exceptions import ConnectionError
 from pandas import read_csv
+from pathlib import Path
 
 
-DATABASE = "/media/main/311.archive.db"
+DATABASE = "/media/main/311.db"
 
 
 def arguments():
     parser = argparse.ArgumentParser(description="")
     parser.add_argument("--archive_dir", help="")
+    parser.add_argument("--archive_file", help="")
     return parser.parse_args()
 
 def insert_case_info(needle_data):
@@ -21,7 +23,7 @@ def insert_case_info(needle_data):
         clmess = clmess.replace("'", "")
         values.append(f"({id},{lat},{long},'{op}','{cl}','{clmess}')")
     sql = f"""
-    INSERT INTO needle(case_id,latitude,longitude,opened,closed,closed_message)
+    INSERT INTO archive(case_id,latitude,longitude,opened,closed,closed_message)
     VALUES {','.join(values)}
     """
     conn = get_connection()
@@ -43,7 +45,7 @@ def get_connection():
 
 def create_database():
     cases_code = """
-    CREATE TABLE IF NOT EXISTS needle (
+    CREATE TABLE IF NOT EXISTS archive (
             case_id INT PRIMARY KEY,
             latitude FLOAT,
             longitude FLOAT,
@@ -66,11 +68,9 @@ def cases_done():
     conn = get_connection()
     if conn is not None:
         cur = conn.cursor()
-        cur.execute("SELECT case_id FROM needle")
+        cur.execute("SELECT case_id FROM archive")
         cases = cur.fetchall()
-        cur.execute("SELECT case_id FROM failed")
-        failed = cur.fetchall()
-        cases_flat = [case[0] for case in cases + failed]
+        cases_flat = [case[0] for case in cases]
         conn.close()
         return cases_flat
     else:
@@ -78,13 +78,19 @@ def cases_done():
 
 
 def main():
-    ars = arguments()
+    args = arguments()
     create_database()
     cases_already_done = cases_done()
-    files = [file for file in os.listdir(args.archive_dir) if "csv" in file]
+    files = []
+    if args.archive_dir is not None:
+        files = [Path(args.archive_dir) / file for file in os.listdir(args.archive_dir) if "csv" in file]
+    elif args.archive_file is not None:
+        files = [args.archive_file]
+    else:
+        raise SystemExit("Archive file or directory needs to be added")
     for file in files:
-        print(file)
-        data = read_csv(f"../{file}")
+        print(f"Adding: {file}")
+        data = read_csv(file)
         needle_data = data[data.case_title == "Needle Pickup"].loc[:, ["case_enquiry_id", "open_dt", "closed_dt", "closure_reason", "latitude", "longitude"]]
         needle_data = needle_data[~needle_data.case_enquiry_id.isin(cases_already_done)]
         if len(needle_data.open_dt) != 0:
