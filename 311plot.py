@@ -10,6 +10,7 @@ from sqlite3 import Error
 from pandas import DataFrame, concat
 from datetime import datetime
 from pathlib import Path
+from dateutil.relativedelta import relativedelta
 
 
 def arguments():
@@ -127,6 +128,30 @@ def plot(data: DataFrame, out_dir: str) -> None:
         },
     )
     fig.write_html(out_path / "311_week.html")
+
+    year_ago = datetime.now() - relativedelta(years=1)
+
+    year_data = data[data.opened_dt > year_ago]
+    fig = px.density_mapbox(
+        year_data,
+        lat="latitude",
+        lon="longitude",
+        z="Calls",
+        radius=10,
+        center=dict(lat=center_lat, lon=center_lon),
+        zoom=11,
+        mapbox_style="stamen-terrain",
+        hover_data={
+            "case_id": True,
+            "opened": True,
+            "Quantity": True,
+            "latitude": False,
+            "longitude": False,
+            "Calls": False,
+        },
+        title=f"{min(year_data.opened_dt).date()} - {max(year_data.opened_dt).date()}",
+    )
+    fig.write_html(out_path / "311_year.html")
 
     shattuck_date = datetime.fromisoformat("2021-12-20 00:00")
     total_time = max(data.opened_dt) - shattuck_date
