@@ -104,7 +104,7 @@ def main():
         raise SystemExit("Archive file or directory needs to be added")
     for file in files:
         print(f"Adding: {file}")
-        data = read_csv(file)
+        data = read_csv(file, low_memory=False)
         needle_data = data[data.case_title == "Needle Pickup"].loc[
             :,
             [
