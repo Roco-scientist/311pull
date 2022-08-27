@@ -17,20 +17,29 @@ def arguments():
     parser.add_argument("--archive_file", help="")
     return parser.parse_args()
 
+
 def insert_case_info(needle_data):
     values = []
-    for id,lat,long,op,cl,clmess in zip(needle_data.case_enquiry_id, needle_data.latitude,needle_data.longitude,needle_data.open_dt,needle_data.closed_dt,needle_data.closure_reason):
+    for id, lat, long, photo, op, cl, clmess in zip(
+        needle_data.case_enquiry_id,
+        needle_data.latitude,
+        needle_data.longitude,
+        needle_data.submittedphoto,
+        needle_data.open_dt,
+        needle_data.closed_dt,
+        needle_data.closure_reason,
+    ):
         clmess = clmess.replace("'", "")
-        values.append(f"({id},{lat},{long},'{op}','{cl}','{clmess}')")
+        values.append(f"({id},{lat},{long},'{photo}','{op}','{cl}','{clmess}')")
     sql = f"""
-    INSERT INTO archive(case_id,latitude,longitude,opened,closed,closed_message)
+    INSERT INTO archive(case_id,latitude,longitude,photo,opened,closed,closed_message)
     VALUES {','.join(values)}
     """
     conn = get_connection()
-    cur = conn.cursor()
-    cur.execute(sql)
-    conn.commit()
     if conn is not None:
+        cur = conn.cursor()
+        cur.execute(sql)
+        conn.commit()
         conn.close()
 
 
@@ -49,6 +58,7 @@ def create_database():
             case_id INT PRIMARY KEY,
             latitude FLOAT,
             longitude FLOAT,
+            photo VARCHAR(255),
             opened DATETIME,
             closed DATETIME,
             closed_message VARCHAR(255)
@@ -83,7 +93,11 @@ def main():
     cases_already_done = cases_done()
     files = []
     if args.archive_dir is not None:
-        files = [Path(args.archive_dir) / file for file in os.listdir(args.archive_dir) if "csv" in file]
+        files = [
+            Path(args.archive_dir) / file
+            for file in os.listdir(args.archive_dir)
+            if "csv" in file
+        ]
     elif args.archive_file is not None:
         files = [args.archive_file]
     else:
@@ -91,7 +105,18 @@ def main():
     for file in files:
         print(f"Adding: {file}")
         data = read_csv(file)
-        needle_data = data[data.case_title == "Needle Pickup"].loc[:, ["case_enquiry_id", "open_dt", "closed_dt", "closure_reason", "latitude", "longitude"]]
+        needle_data = data[data.case_title == "Needle Pickup"].loc[
+            :,
+            [
+                "case_enquiry_id",
+                "open_dt",
+                "closed_dt",
+                "closure_reason",
+                "latitude",
+                "longitude",
+                "submittedphoto",
+            ],
+        ]
         needle_data = needle_data[~needle_data.case_enquiry_id.isin(cases_already_done)]
         if len(needle_data.open_dt) != 0:
             insert_case_info(needle_data)
