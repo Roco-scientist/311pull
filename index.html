@@ -4,6 +4,10 @@
     <style>
       body {font-family: Arial;}
 
+      img {
+        max-width: 100%;
+      }
+
       /* Style the tab */
       .tab {
         overflow: hidden;
@@ -48,7 +52,7 @@
         width: 50%;
         position: fixed;
         z-index: 1;
-        overflow-x: hidden;
+        <!-- overflow-x: hidden; -->
         padding-top: 20px;
       }
 
@@ -61,6 +65,8 @@
         right: 0;
       }
     </style>
+    <base href="/">
+    <base target="_blank">
   </head> 
   <body> 
     <h1>Needle pickup</h1>
@@ -70,6 +76,7 @@
       <button class="tablink" onClick="openTime(event, 'Year')">Past Year</button>
       <button class="tablink" onClick="openTime(event, 'Shattuck')">Pre and Post Shattuck</button>
       <button class="tablink" onClick="openTime(event, 'Stony')">Stony Brook Neighborhood Assessment</button>
+      <button class="tablink" onClick="openTime(event, 'Pics')">Pictures since cottages</button>
     </div>
     <div id="Monthly" class="tabcontent">
       <iframe src="./311_month.html" height="90%" width="98%" title="MonthHeatmap"></iframe>
@@ -81,6 +88,9 @@
       <iframe src="./311_year.html" height="90%" width="98%" title="WeekHeatmap"></iframe>
     </div>
     <div id="Shattuck" class="tabcontent">
+      <a href="https://www.hiv.gov/blog/scientists-discover-hepatitis-c-virus-can-remain-infectious-outside-of-the-body-for-up-to-6-weeks">Hepatitis C remains infectious for 6 weeks link</a>
+      <br>
+      <a href="https://www.ipetitions.com/petition/scale-back-shattuck-plans-and-decentralize">Sign the petition to scale back the Shattuck plans</a>
       <div class="split left">
         <img src="./311_preShattuck.png">
       </div>
@@ -89,17 +99,10 @@
       </div>
     </div>
     <div id="Stony" class="tabcontent">
-      <h2>Open heroin use and discarded needles</h2>
-      <div class="split left">
-        <h3>Current trajectory</h3>
-        <h4>30 housed at the Shattuck site<br>Fenced in</h4>
-        <img src="./year_heatmap_current.png">
-      </div>
-      <div class="split right">
-        <h3>Future trajectory</h3>
-        <h4>100 housed + 400 treated at the Shattuck site and integrated into the park<br>Another 140 at Pine St Inn</h4>
-        <img src="./year_heatmap_future.png">
-      </div>
+      <iframe src="./stonybrook.html" height="100%" width="100%" title="StonyBrook"></iframe>
+    </div>
+    <div id="Pics" class="tabcontent">
+      <iframe src="./pictures.html" height="100%" width="100%" title="Pictures"></iframe>
     </div>
     <script>
       function openTime(evt, timeName) {
