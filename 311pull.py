@@ -14,7 +14,7 @@ from requests.exceptions import ConnectionError
 
 
 BASE311 = "https://311.boston.gov/reports/"
-DATABASE = "/media/main/311.db"
+DATABASE = "/media/main/Rory/311/311.db"
 
 
 def arguments():
@@ -261,7 +261,7 @@ def cases_done():
 def needle_cases():
     conn = None
     try:
-        conn = sqlite3.connect("/media/main/311.db")
+        conn = sqlite3.connect("/media/main/Rory/311/311.db")
     except Error as e:
         print(e)
     if conn is not None:
