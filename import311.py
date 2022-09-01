@@ -1,14 +1,17 @@
 import argparse
+import re
 import sqlite3
 import os
+import requests
 
 from sqlite3 import Error
 from requests.exceptions import ConnectionError
 from pandas import read_csv
 from pathlib import Path
+from bs4 import BeautifulSoup
 
 
-DATABASE = "/media/main/311.db"
+DATABASE = "/media/main/Rory/311/311.db"
 
 
 def arguments():
@@ -41,6 +44,25 @@ def insert_case_info(needle_data):
         cur.execute(sql)
         conn.commit()
         conn.close()
+
+
+def download_files():
+    url = "https://data.boston.gov/dataset/311-service-requests"
+    page = requests.get(url)
+    contents = BeautifulSoup(page.content, "html.parser")
+    archived_data = contents.find_all(class_="resource-item")
+    archive_files = {}
+    for html_data in archived_data:
+        description = html_data.find(class_="heading").text
+        date_search = re.search("20\d+", description)
+        date = "Uknown"
+        if date_search is not None:
+            date = date_search.group()
+        button = html_data.find(class_="btn btn-primary")
+        download_link = button["href"]
+        if download_link[-3:] == "csv":
+            archive_files[date] = download_link
+    return archive_files
 
 
 def get_connection():
@@ -89,12 +111,29 @@ def cases_done():
 
 def main():
     args = arguments()
+    archive_path = Path(args.archive_dir)
+    file_links = download_files()
+    years = [int(key) for key in file_links.keys() if key != "Uknown"]
+    current_year = max(years)
+    for year, file_url in file_links.items():
+        if year != "Uknown":
+            file_name = file_url[file_url.rfind("/") + 1:]
+            local_file = archive_path / file_name
+            if int(year) == current_year or not local_file.exists():
+                if int(year) == current_year:
+                    for file in archive_path.iterdir():
+                        if year in str(file):
+                            file.unlink()
+                    if year not in str(local_file):
+                        local_file = archive_path / f"{file_name[:file_name.rfind('.')]}_{year}.csv"
+                command = f"curl -Lo {local_file} {file_url}"
+                os.system(command)
     create_database()
     cases_already_done = cases_done()
     files = []
     if args.archive_dir is not None:
         files = [
-            Path(args.archive_dir) / file
+            archive_path / file
             for file in os.listdir(args.archive_dir)
             if "csv" in file
         ]
