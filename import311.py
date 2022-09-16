@@ -46,6 +46,19 @@ def insert_case_info(needle_data):
         conn.close()
 
 
+def insert_photo(needle_data):
+    conn = get_connection()
+    for id, photo in zip(needle_data.case_enquiry_id, needle_data.submittedphoto):
+        sql = f"UPDATE archive SET photo='{photo}' WHERE case_id={id}"
+        if conn is not None:
+            cur = conn.cursor()
+            cur.execute(sql)
+            conn.commit()
+        else:
+            raise SystemError("Did not connect to database")
+    conn.close()
+
+
 def download_files():
     url = "https://data.boston.gov/dataset/311-service-requests"
     page = requests.get(url)
@@ -54,7 +67,7 @@ def download_files():
     archive_files = {}
     for html_data in archived_data:
         description = html_data.find(class_="heading").text
-        date_search = re.search("20\d+", description)
+        date_search = re.search(r"20\d+", description)
         date = "Uknown"
         if date_search is not None:
             date = date_search.group()
@@ -103,8 +116,11 @@ def cases_done():
         cur.execute("SELECT case_id FROM archive")
         cases = cur.fetchall()
         cases_flat = [case[0] for case in cases]
+        cur.execute("SELECT case_id FROM archive WHERE photo='nan'")
+        cases = cur.fetchall()
+        cases_no_photo = [case[0] for case in cases]
         conn.close()
-        return cases_flat
+        return cases_flat, cases_no_photo
     else:
         raise ConnectionError("Database did not connect")
 
@@ -117,7 +133,7 @@ def main():
     current_year = max(years)
     for year, file_url in file_links.items():
         if year != "Uknown":
-            file_name = file_url[file_url.rfind("/") + 1:]
+            file_name = file_url[file_url.rfind("/") + 1 :]
             local_file = archive_path / file_name
             if int(year) == current_year or not local_file.exists():
                 if int(year) == current_year:
@@ -125,11 +141,14 @@ def main():
                         if year in str(file):
                             file.unlink()
                     if year not in str(local_file):
-                        local_file = archive_path / f"{file_name[:file_name.rfind('.')]}_{year}.csv"
+                        local_file = (
+                            archive_path
+                            / f"{file_name[:file_name.rfind('.')]}_{year}.csv"
+                        )
                 command = f"curl -Lo {local_file} {file_url}"
                 os.system(command)
     create_database()
-    cases_already_done = cases_done()
+    cases_already_done, cases_without_photo = cases_done()
     files = []
     if args.archive_dir is not None:
         files = [
@@ -156,9 +175,17 @@ def main():
                 "submittedphoto",
             ],
         ]
+        needle_data_added_photo = needle_data[
+            (
+                needle_data.case_enquiry_id.isin(cases_without_photo)
+                & ~needle_data.submittedphoto.isna()
+            )
+        ].copy()
         needle_data = needle_data[~needle_data.case_enquiry_id.isin(cases_already_done)]
         if len(needle_data.open_dt) != 0:
             insert_case_info(needle_data)
+        if len(needle_data_added_photo.index) != 0:
+            insert_photo(needle_data_added_photo)
 
 
 if __name__ == "__main__":

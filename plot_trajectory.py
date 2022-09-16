@@ -7,7 +7,6 @@ import plotly.express as px
 import plotly.io as pio
 import plotly.graph_objects as go
 import re
-import statistics
 import numpy as np
 import math
 
@@ -15,7 +14,6 @@ from sqlite3 import Error
 from pandas import DataFrame, concat
 from datetime import datetime
 from pathlib import Path
-from dateutil.relativedelta import relativedelta
 
 
 def arguments():
@@ -66,6 +64,7 @@ def plot_go(data: DataFrame, out_dir: str) -> None:
     trajectories = DataFrame(
         {
             "latitude": [
+                42.300850930687,
                 42.3019677711,
                 42.3037,
                 42.30086,
@@ -77,6 +76,7 @@ def plot_go(data: DataFrame, out_dir: str) -> None:
                 42.301111,
                 42.301704,
                 42.3019,
+                42.3025649,
                 42.3037,
                 42.306497,
                 42.3019,
@@ -86,6 +86,7 @@ def plot_go(data: DataFrame, out_dir: str) -> None:
                 42.301684,
             ],
             "longitude": [
+                -71.1012186482549,
                 -71.1010218665,
                 -71.1041,
                 -71.102747,
@@ -97,6 +98,7 @@ def plot_go(data: DataFrame, out_dir: str) -> None:
                 -71.10374,
                 -71.103898,
                 -71.10416,
+                -71.1051913,
                 -71.1041,
                 -71.107466,
                 -71.10416,
@@ -108,12 +110,14 @@ def plot_go(data: DataFrame, out_dir: str) -> None:
             "direction": [
                 "Williams_now",
                 "Williams_now",
+                "Williams_now",
                 "T",
                 "T",
                 "T",
                 "T",
                 "T",
                 "T",
+                "Brookley_now",
                 "Brookley_now",
                 "Brookley_now",
                 "Brookley_now",
@@ -125,6 +129,28 @@ def plot_go(data: DataFrame, out_dir: str) -> None:
                 "T_futre",
                 "T_futre",
             ],
+        }
+    )
+
+    fence = DataFrame(
+        {
+            "latitude": [
+                42.297703,
+                42.298453,
+                42.299219,
+                42.299892,
+                42.300275,
+                42.300549,
+            ],
+            "longitude": [
+                -71.100861,
+                -71.099464,
+                -71.100287,
+                -71.100585,
+                -71.101443,
+                -71.101923,
+            ],
+            "label": ["Fence", "Fence", "Fence", "Fence", "Fence", "Fence"],
         }
     )
 
@@ -180,6 +206,15 @@ def plot_go(data: DataFrame, out_dir: str) -> None:
         marker={"size": house_sizes[housing_select], "color": "blue"},
         showlegend=False,
         text=housing.label,
+        hovertemplate="%{text}",
+    )
+    fig.add_scattermapbox(
+        mode="lines",
+        lat=fence.latitude,
+        lon=fence.longitude,
+        line={"width": 6, "color": "black"},
+        showlegend=False,
+        text=fence,
         hovertemplate="%{text}",
     )
 

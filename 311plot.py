@@ -11,6 +11,7 @@ from pandas import DataFrame, concat
 from datetime import datetime
 from pathlib import Path
 from dateutil.relativedelta import relativedelta
+from PIL import Image
 
 
 def arguments():
@@ -108,7 +109,7 @@ def plot(data: DataFrame, out_dir: str) -> None:
     # fig.update_layout(colorscale="YlOrRd", zmax=1.4, selector=dict(type='densitymapbox'))
     fig.write_html(out_path / "311_month.html")
     fig = px.density_mapbox(
-        data,
+        data[data.opened_dt > (datetime.now() - relativedelta(years=1))],
         lat="latitude",
         lon="longitude",
         z="Calls",
@@ -160,32 +161,63 @@ def plot(data: DataFrame, out_dir: str) -> None:
     shattuck_data["timeframe"] = [
         "Pre" if day < shattuck_date else "Post" for day in shattuck_data.opened_dt
     ]
-    fig = px.density_mapbox(
-        shattuck_data[shattuck_data.timeframe == "Pre"],
-        lat="latitude",
-        lon="longitude",
-        z="Calls",
-        radius=10,
-        center=dict(lat=42.304, lon=-71.095),
-        zoom=13,
+    pre_shattuck_df = shattuck_data[shattuck_data.timeframe == "Pre"]
+    fig = go.Figure(
+        go.Densitymapbox(
+            lat=pre_shattuck_df.latitude,
+            lon=pre_shattuck_df.longitude,
+            radius=8,
+            z=pre_shattuck_df.Calls,
+            zmax=1.4,
+            showscale=False,
+        )
+    )
+    fig.update_layout(
         mapbox_style="stamen-terrain",
-        hover_data=["case_id", "Quantity"],
-        title=f"Before Shattuck cottages<br>{min(shattuck_data.opened_dt).date()} - {shattuck_date.date()}",
+        mapbox_center_lon=-71.095,
+        mapbox_center_lat=42.304,
+        mapbox=dict(zoom=13),
+        margin=dict(l=0, r=0, b=0),
+        width = 500, 
+        height = 500,
+        title=go.layout.Title(text=f"Before Shattuck cottages<br>{min(shattuck_data.opened_dt).date()} - {shattuck_date.date()}"),
     )
     fig.write_image(out_path / "311_preShattuck.png")
-    fig = px.density_mapbox(
-        shattuck_data[shattuck_data.timeframe == "Post"],
-        lat="latitude",
-        lon="longitude",
-        z="Calls",
-        radius=10,
-        center=dict(lat=42.304, lon=-71.095),
-        zoom=13,
-        mapbox_style="stamen-terrain",
-        hover_data=["case_id", "Quantity"],
-        title=f"After Shattuck cottages<br>{shattuck_date.date()} - {max(data.opened_dt).date()}",
+
+    post_shattuck_df = shattuck_data[shattuck_data.timeframe == "Post"]
+    fig = go.Figure(
+        go.Densitymapbox(
+            lat=post_shattuck_df.latitude,
+            lon=post_shattuck_df.longitude,
+            radius=8,
+            z=post_shattuck_df.Calls,
+            zmax=1.4,
+            showscale=False,
+        )
     )
+    fig.update_layout(
+        mapbox_style="stamen-terrain",
+        mapbox_center_lon=-71.095,
+        mapbox_center_lat=42.304,
+        mapbox=dict(zoom=13),
+        margin=dict(l=0, r=0, b=0),
+        width = 500, 
+        height = 500,
+        title=go.layout.Title(text=f"After Shattuck cottages<br>{shattuck_date.date()} - {max(data.opened_dt).date()}"),
+    )
+    fig.update_traces(zmax=1.4, selector=dict(type="densitymapbox"))
     fig.write_image(out_path / "311_postShattuck.png")
+
+    image_files = (Image.open(out_path / file_name) for file_name in ("311_preShattuck.png", "311_postShattuck.png"))
+    img = next(image_files)  # extract first image from iterator
+    img.save(
+        fp=out_path / "311_pre_post_shattuck.gif",
+        format="GIF",
+        append_images=image_files,
+        save_all=True,
+        duration=1500,
+        loop=0,
+    )
 
 
 def plot_progress(database: str, out_dir: str):
